@@ -1,0 +1,12 @@
+flask
+h5py
+numpy
+opencv-python-headless
+pytorch-lightning
+pyyaml
+requests
+sklearn
+toml
+torch
+torchvision
+tqdm

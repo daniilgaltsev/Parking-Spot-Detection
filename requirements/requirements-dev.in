@@ -1,0 +1,18 @@
+-c requirements.txt
+
+bandit
+black
+ipdb
+itermplot
+matplotlib
+mypy
+pandas
+pillow
+pycodestyle
+pydocstyle
+pylint
+pytest
+safety
+scipy
+shellcheck-py
+wandb
