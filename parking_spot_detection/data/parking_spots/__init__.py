@@ -1,0 +1,1 @@
+"""Parking Spots data module."""
