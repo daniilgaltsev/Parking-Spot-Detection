@@ -15,10 +15,8 @@ pip-compile requirements-dev.in || FAILURE=true
 
 if [ "$FAILURE" = true ]; then
   echo "Compiling failed"
-  sleep 20
   exit 1
 fi
 
 echo "Compiling done"
-sleep 20
 exit 0

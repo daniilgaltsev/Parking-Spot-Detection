@@ -13,10 +13,8 @@ pip-sync requirements.txt requirements-dev.txt || FAILURE=true
 
 if [ "$FAILURE" = true ]; then
   echo "Syncing failed"
-  sleep 5
   exit 1
 fi
 
 echo "Syncing done"
-sleep 5
 exit 0

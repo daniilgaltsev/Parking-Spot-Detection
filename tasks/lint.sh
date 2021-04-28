@@ -43,11 +43,9 @@ for failure in "${FAILURES[@]}"
 do
     if [ "$failure" = true ]; then
         echo "Linting failed"
-        sleep 30
         exit 1
     fi
 done
 
 echo "Linting passed"
-sleep 30
 exit 0
