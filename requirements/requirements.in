@@ -2,7 +2,7 @@ flask
 h5py
 numpy
 opencv-python-headless
-pytorch-lightning
+pytorch-lightning<1.2
 pyyaml
 requests
 sklearn

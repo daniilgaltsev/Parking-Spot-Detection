@@ -89,7 +89,7 @@ pyasn1==0.4.8
     # via
     #   pyasn1-modules
     #   rsa
-pytorch-lightning==1.2.7
+pytorch-lightning==1.1.8
     # via -r requirements.in
 pyyaml==5.3.1
     # via
@@ -130,10 +130,7 @@ torch==1.8.1
     # via
     #   -r requirements.in
     #   pytorch-lightning
-    #   torchmetrics
     #   torchvision
-torchmetrics==0.2.0
-    # via pytorch-lightning
 torchvision==0.9.1
     # via -r requirements.in
 tqdm==4.60.0
