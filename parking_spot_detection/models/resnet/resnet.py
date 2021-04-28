@@ -8,6 +8,8 @@ from typing import Any, Dict, List, Optional, Type, Union
 
 import torch
 import torch.nn as nn
+import torchvision
+from torchvision.models.mnasnet import _load_pretrained
 
 from .blocks import ResNetBlock, ResNetBottleneck, conv1x1
 
@@ -55,7 +57,7 @@ class ResNet(nn.Module):
 
         if use_torchvision:
             tv_models_module = importlib.import_module("torchvision.models")
-            self.model = getattr(tv_models_module, resnet_type)()
+            self.model = getattr(tv_models_module, resnet_type)(pretrained=True)
             self.model.fc = nn.Linear(self.model.fc.in_features, num_classes)
         else:
             num_blocks, block = TYPE_TO_ARGS[resnet_type]
@@ -77,7 +79,7 @@ class ResNet(nn.Module):
         )
         parser.add_argument(
             "--use_torchvision_model", default=False, action="store_true",
-            help="If true, will use resnet architecture from torchvision."
+            help="If true, will use pretrained resnet architecture from torchvision."
         )
 
         return parser
