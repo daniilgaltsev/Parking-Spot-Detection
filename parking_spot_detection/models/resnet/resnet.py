@@ -8,8 +8,6 @@ from typing import Any, Dict, List, Optional, Type, Union
 
 import torch
 import torch.nn as nn
-import torchvision
-from torchvision.models.mnasnet import _load_pretrained
 
 from .blocks import ResNetBlock, ResNetBottleneck, conv1x1
 
