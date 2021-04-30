@@ -16,7 +16,8 @@ class HDF5Dataset(IterableDataset):
         filename: Path to the hdf5 file.
         data_dataset_name: A name of a dataset in hdf5 with data.
         targets_dataset_name: A name of a dataset in hdf5 with targets for the data.
-        worker_buffer_size: A size of a buffer used in each worker, which is preloaded and shuffled.
+        worker_buffer_size: A size of a buffer in batch sizes used in each worker, which is preloaded and shuffled.
+        batch_size: A size of a batch.
         transform (optional): Optional transformation to apply to the data.
         transform_target (optional): Optional transformation to apply to the targets.
     """
@@ -27,13 +28,14 @@ class HDF5Dataset(IterableDataset):
         data_dataset_name: Union[Sequence[Any], torch.Tensor],
         targets_dataset_name: Union[Sequence[Any], torch.Tensor],
         worker_buffer_size: int,
+        batch_size: int,
         transform: Optional[Callable[..., Any]] = None,
         transform_target: Optional[Callable[..., Any]] = None
     ):
         self.filename = filename
         self.data_dataset_name = data_dataset_name
         self.targets_dataset_name = targets_dataset_name
-        self.worker_buffer_size = worker_buffer_size
+        self.worker_buffer_size = worker_buffer_size * batch_size
         self.transform = transform
         self.transform_target = transform_target
         self.file = None
