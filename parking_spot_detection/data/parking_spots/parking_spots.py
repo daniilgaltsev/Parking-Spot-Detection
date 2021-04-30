@@ -2,21 +2,16 @@
 
 import argparse
 import json
-import multiprocessing as mp
-from pathlib import Path
-from time import time
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Tuple
 
-import cv2
 import h5py
-import numpy as np
-from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
 from ..base_data_module import BaseDataModule
 from ..hdf5_dataset import HDF5Dataset
-from .parse_labels import get_labels_and_paths
+from .processing import ParkingSpotsProcessor
+
 
 
 RAW_DATA_DIRNAME = BaseDataModule.data_dirname() / "raw" / "parking_dataset"
@@ -29,6 +24,8 @@ ESSENTIALS_FILENAME = PROCESSED_DATA_DIRNAME / "parking_dataset_essentials.json"
 
 REWRITE = False
 SEED = 0
+NUM_PROCESSING_WORKERS = -1
+PROCESSING_BATCH_SIZE = 1000
 TRAINVAL_SPLIT = 0.9
 TRAIN_SPLIT = 0.95
 
@@ -60,6 +57,7 @@ class ParkingSpots(BaseDataModule):
             self.args = vars(args)
 
         self.rewrite = self.args.get("rewrite", REWRITE)
+        self.num_processing_workers = self.args.get("num_processing_workers", NUM_PROCESSING_WORKERS)
         self.seed = self.args.get("seed", SEED)
         self.use_local = self.args.get("use_local", USE_LOCAL)
         self.worker_buffer_size = self.args.get("worker_buffer_size", WORKER_BUFFER_SIZE)
@@ -119,6 +117,10 @@ class ParkingSpots(BaseDataModule):
         """Adds argumets to parser required for Parking Spots Dataset."""
         parser = BaseDataModule.add_to_argparse(parser, main_parser)
         parser.add_argument(
+            "--num_processing_workers", type=int, default=NUM_PROCESSING_WORKERS,
+            help="Number of workers to use for processing raw data. If -1 will use <num_cpu_cores> - 1."
+        )
+        parser.add_argument(
             "--rewrite", default=False, action="store_true",
             help="If True, will processes raw data even if a processed file already exists."
         )
@@ -167,7 +169,12 @@ class ParkingSpots(BaseDataModule):
     def prepare_data(self) -> None:
         """Prepares data for the node globally."""
         if self.rewrite or not PROCESSED_DATA_FILENAME.exists():
-            _process_dataset(use_local=self.use_local, rewrite=self.rewrite, seed=self.seed)
+            _process_dataset(
+                use_local=self.use_local,
+                num_processing_workers=self.num_processing_workers,
+                rewrite=self.rewrite,
+                seed=self.seed
+            )
         with ESSENTIALS_FILENAME.open("r") as f:
             self.essentials = json.load(f)
 
@@ -217,6 +224,7 @@ class ParkingSpots(BaseDataModule):
 
 def _process_dataset(
     use_local: bool,
+    num_processing_workers: int,
     rewrite: bool,
     seed: int,
     resize_size: Optional[Tuple[int, int]] = None
@@ -225,127 +233,30 @@ def _process_dataset(
 
     Args:
         use_local: If True, will use data from data folder, otherwise will download images from urls.
+        num_processing_workers: Number of workers to use for processing raw data. If -1 will use <num_cpu_cores> - 1.
         rewrite: If True, will processes raw data even if a processed file already exists.
         seed: An int used to seed train, val and test random split.
         resize_size (optional): A tuple of a size of images in the resulting file. If None, will not resize.
     """
-    if not rewrite and PROCESSED_DATA_FILENAME.exists():
-        print("Dataset already processed and rewrite=False.")
-        return None
-
-    start_t = time()
-
-    print(f"Parsing export json file. {time() - start_t:.2f}")
-    labels_and_paths = get_labels_and_paths(
-        downloaded_dirname=DL_DATA_DIRNAME,
-        return_url=(not use_local)
+    processor = ParkingSpotsProcessor(
+        use_local=use_local,
+        dl_data_dirname=DL_DATA_DIRNAME,
+        images_dirname=IMAGES_DIRNAME,
+        processed_data_filename=PROCESSED_DATA_FILENAME,
+        essentials_filename=ESSENTIALS_FILENAME,
+        trainval_split=TRAINVAL_SPLIT,
+        train_split=TRAIN_SPLIT,
+        num_processing_workers=num_processing_workers,
+        processing_batch_size=PROCESSING_BATCH_SIZE,
+        rewrite=rewrite,
+        seed=seed,
+        resize_size=resize_size
     )
-
-    name_to_class = {}
-    y = []
-    paths = []
-    for label, path in labels_and_paths:
-        if label not in name_to_class:
-            name_to_class[label] = len(name_to_class)
-        y.append(name_to_class[label])
-        paths.append(IMAGES_DIRNAME / path if use_local else path)
-    mapping = {name_to_class[name]: name for name in name_to_class}
-
-    y_trainval, y_test, paths_trainval, paths_test = train_test_split(
-        y, paths, train_size=TRAINVAL_SPLIT, stratify=y, shuffle=True, random_state=seed
-    )
-    y_train, y_val, paths_train, paths_val = train_test_split(
-        y_trainval, paths_trainval, train_size=TRAIN_SPLIT, stratify=y_trainval, shuffle=True, random_state=seed
-    )
-
-    print(f"Will save train={len(y_train)}, val={len(y_val)}, test={len(y_test)}")
-    print(f"Creating HDF5 file. {time() - start_t:.2f}")
-
-    sample_image = _get_image(paths_train[0], resize_size)
-    image_shape = sample_image.shape
-
-    chunk_shape = (1, *image_shape)
-    x_train_shape = (len(y_train), *image_shape)
-    x_val_shape = (len(y_val), *image_shape)
-    x_test_shape = (len(y_test), *image_shape)
-    PROCESSED_DATA_FILENAME.parent.mkdir(exist_ok=True, parents=True)
-    with h5py.File(PROCESSED_DATA_FILENAME, "w") as f:
-        dataset_train = f.create_dataset("x_train", shape=x_train_shape, chunks=chunk_shape, dtype=np.uint8)
-        f.create_dataset("y_train", data=y_train, dtype=np.int64)
-        dataset_val = f.create_dataset("x_val", shape=x_val_shape, chunks=chunk_shape, dtype=np.uint8)
-        f.create_dataset("y_val", data=y_val, dtype=np.int64)
-        dataset_test = f.create_dataset("x_test", shape=x_test_shape, chunks=chunk_shape, dtype=np.uint8)
-        f.create_dataset("y_test", data=y_test, dtype=np.int64)
-
-        with mp.Pool(11) as pool:
-            _process_split(pool, paths_train, dataset_train, resize_size, start_t, "train")
-            _process_split(pool, paths_val, dataset_val, resize_size, start_t, "val")
-            _process_split(pool, paths_test, dataset_test, resize_size, start_t, "test")
-
-    print(f"Saving essential dataset parameters. {time() - start_t:.2f}")
-    essentials = {
-        "mapping": mapping,
-        "input_size": image_shape
-    }
-    with ESSENTIALS_FILENAME.open("w") as f:
-        json.dump(essentials, f)
-
-    print(f"Done processing. {time() - start_t:.2f}")
-
-def _process_split(
-    pool: mp.Pool,
-    image_paths: List[Union[Path, str]],
-    dataset: h5py.Dataset,
-    resize_size: Optional[Tuple[int, int]],
-    start_t: float,
-    name: str
-) -> None:
-    """Processes a split (e.g. train) of data.
-
-    Args:
-        image_paths: A list of paths or urls to images.
-        dataset: A h5py dataset where to write data.
-        resize_size: A tuple of a size of images in the resulting file. If None, will not resize.
-        start_t: Time from which to generate log.
-        name: Name of the split (e.g. "train").
-    """
-    processing_batch_size = 1000 #TODO: refactor
-    n_batches = (len(image_paths) - 1) // processing_batch_size + 1
-    for i in range(n_batches):
-        start = i * processing_batch_size
-        end = min((i + 1) * processing_batch_size, len(image_paths))
-        print(f"Processing {name} batch {i + 1}/{n_batches} of size {end - start}. {time() - start_t:.2f}")
-        images = pool.starmap(
-            _get_image,
-            zip(
-                image_paths[start:end],
-                (resize_size for _ in range(start, end))
-            )
-        )
-        dataset[start:end] = images
-
-def _get_image(
-    filename: Union[Path, str],
-    resize_size: Optional[Tuple[int, int]]
-) -> np.ndarray:
-    """Reads or downloads and resizes an image given its path.
-
-    Args:
-        filename: A path to file or a url string.
-        resize_size: A size of output image. If None, will not resize.
-    """
-    if isinstance(filename, str):
-        raise NotImplementedError("URL download is not supported.")
-
-    image = cv2.imread(str(filename))
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    if resize_size is not None:
-        image = cv2.resize(image, resize_size)
-    return image
+    processor.process()
 
 
 if __name__ == "__main__":
-    _process_dataset(use_local=True, rewrite=True, seed=0)
+    _process_dataset(use_local=True, num_processing_workers=9, rewrite=True, seed=0, resize_size=None)
 
     import matplotlib.pyplot as plt
     def showid(idx, imgs, labels):
