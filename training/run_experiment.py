@@ -7,7 +7,6 @@ import warnings
 
 import numpy as np
 import pytorch_lightning as pl
-from pytorch_lightning.loggers import WandbLogger
 import torch
 
 from parking_spot_detection import lit_models
@@ -46,6 +45,15 @@ def _setup_parser() -> argparse.ArgumentParser:
     parser.add_argument("--es_patience", type=int, default=12, help="Patience for Early Stopping.")
     parser.add_argument(
         "--use_lr_monitor", default=False, action="store_true", help="If True. will use LRMonitor callback."
+    )
+
+    parser.add_argument(
+        "--show_image_examples", default=False, action="store_true",
+        help="If True, will show a batch of images (after transforms) instead of training."
+    )
+    parser.add_argument(
+        "--count_classes", default=False, action="store_true",
+        help="If True, will count items in each class in train, val and test and print the counts instead of training."
     )
 
     parser.add_argument("--seed", type=int, default=SEED)
@@ -89,6 +97,15 @@ def main() -> None:
     data_class = _import_class(DATA_CLASS_TEMPLATE.format(args.data_class))
     model_class = _import_class(MODEL_CLASS_TEMPLATE.format(args.model_class))
     data = data_class(args=args)
+    if args.show_image_examples:
+        from run_experiment_utils import _show_image_examples  # pylint: disable=import-outside-toplevel
+        _show_image_examples(data)
+        return
+    if args.count_classes:
+        from run_experiment_utils import _count_classes  # pylint: disable=import-outside-toplevel
+        _count_classes(data)
+        return
+
     model = model_class(data_config=data.config(), args=args)
 
     lit_model = lit_models.BaseLitModel(model, args=args)
