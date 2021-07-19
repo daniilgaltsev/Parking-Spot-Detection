@@ -110,7 +110,7 @@ class BaseLitModel(pl.LightningModule):
         scheduler = self.scheduler_class(optimizer)
         return [optimizer], [{"scheduler": scheduler}]
 
-    def forward(self, x: Any) -> Any:  # pylint: disable=arguments-differ
+    def forward(self, x: torch.Tensor) -> Any:  # pylint: disable=arguments-differ
         """Performs a forward operation."""
         return self.model(x)
 

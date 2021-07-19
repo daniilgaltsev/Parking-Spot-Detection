@@ -2,17 +2,21 @@
 
 import argparse
 import importlib
+import json
+from pathlib import Path
 import random
 import warnings
 
 import numpy as np
 import pytorch_lightning as pl
+from pytorch_lightning.loggers import WandbLogger
 import torch
 
 from parking_spot_detection import lit_models
 
 DATA_CLASS_TEMPLATE = "parking_spot_detection.data.{}"
 MODEL_CLASS_TEMPLATE = "parking_spot_detection.models.{}"
+DEFAULT_SAVE_PATH = Path(__file__).resolve().parent / "saved_models"
 SEED = 0
 
 
@@ -54,6 +58,14 @@ def _setup_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--count_classes", default=False, action="store_true",
         help="If True, will count items in each class in train, val and test and print the counts instead of training."
+    )
+
+    parser.add_argument(
+        "--save_torchscript", default=False, action="store_true",
+        help="If True, will save torchscript model at save_model_path."
+    )
+    parser.add_argument(
+        "--save_path", type=str, default=DEFAULT_SAVE_PATH, help="File path at which to save the trained model."
     )
 
     parser.add_argument("--seed", type=int, default=SEED)
@@ -126,8 +138,34 @@ def main() -> None:
 
     trainer.tune(lit_model, datamodule=data)  # pylint: disable=no-member
 
-    trainer.fit(lit_model, datamodule=data)  # pylint: disable=no-member
-    trainer.test(lit_model, datamodule=data)  # pylint: disable=no-member
+    #trainer.fit(lit_model, datamodule=data)  # pylint: disable=no-member
+    #trainer.test(lit_model, datamodule=data)  # pylint: disable=no-member
+
+    if args.save_torchscript: # TODO: move to run_experiment_utils/saving?
+        args.save_path.mkdir(parents=True, exist_ok=True)
+        lit_model.to_torchscript(file_path=str(args.save_path / "model.pt"))
+
+        model_description = {
+            "mapping": data.mapping,
+            "input_shape": data.dims,
+            "output_shape": data.output_dims,
+        }
+        preprocessing = {}
+        normalize = {
+            "step": 0,
+            "mean": data.val_transform.transforms[1].mean,
+            "std": data.val_transform.transforms[1].std
+        }
+        preprocessing["normalize"] = normalize
+        model_description["preprocessing"] = preprocessing
+        # for transform in data.val_transform.transforms:
+
+        # print(data.val_transform)
+        # import ipdb
+        # ipdb.set_trace()
+        with open(args.save_path / "model_desc.json", "w+") as f:
+            json.dump(model_description, f)
+
 
 
 if __name__ == "__main__":
