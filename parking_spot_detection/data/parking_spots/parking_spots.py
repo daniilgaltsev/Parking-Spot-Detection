@@ -13,7 +13,6 @@ from ..hdf5_dataset import HDF5Dataset
 from .processing import ParkingSpotsProcessor
 
 
-
 RAW_DATA_DIRNAME = BaseDataModule.data_dirname() / "raw" / "parking_dataset"
 METADATA_FILENAME = RAW_DATA_DIRNAME / "metadata.toml"
 DL_DATA_DIRNAME = BaseDataModule.data_dirname() / "downloaded" / "parking_dataset"
@@ -44,6 +43,7 @@ RANDOM_ERASING = False
 
 USE_LOCAL = True
 WORKER_BUFFER_SIZE = 5
+
 
 class ParkingSpots(BaseDataModule):
     """Parking Spots data module."""
@@ -150,7 +150,7 @@ class ParkingSpots(BaseDataModule):
         )
         parser.add_argument(
             "--scale_margin_affine", type=float, default=SCALE_MARGIN_AFFINE,
-            help="Scaling factor margin (1 - scale_margin_affine < scale < 1 + scale_margin_affine)." 
+            help="Scaling factor margin (1 - scale_margin_affine < scale < 1 + scale_margin_affine)."
         )
         parser.add_argument(
             "--shear_affine", type=int, default=SHEAR_AFFINE,
@@ -263,11 +263,11 @@ if __name__ == "__main__":
         print(labels[idx])
         plt.imshow(imgs[idx])
         plt.show()
-    with h5py.File(PROCESSED_DATA_FILENAME, "r") as f:
-        x_train = f['x_train']
-        x_val = f['x_val']
-        x_test = f['x_test']
-        y_train = f['y_train']
+    with h5py.File(PROCESSED_DATA_FILENAME, "r") as fi:
+        x_train = fi['x_train']
+        x_val = fi['x_val']
+        x_test = fi['x_test']
+        y_train = fi['y_train']
         showi = lambda idx: showid(idx, x_train, y_train)
         import ipdb
         ipdb.set_trace()

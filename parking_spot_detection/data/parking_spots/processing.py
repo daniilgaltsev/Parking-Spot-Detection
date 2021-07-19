@@ -1,6 +1,6 @@
 """Module for processing raw parking spot dataset."""
 
-
+import json
 import multiprocessing as mp
 from pathlib import Path
 from time import time
@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import cv2
 import h5py
-import json
 import numpy as np
 from sklearn.model_selection import train_test_split
 
@@ -19,7 +18,9 @@ ImagePath = Union[Path, str]
 
 
 class ParkingSpotsProcessor:
-    def __init__(
+    """Class for processing raw parking spots dataset."""
+
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         use_local: bool,
         dl_data_dirname: Path,
@@ -44,7 +45,7 @@ class ParkingSpotsProcessor:
         self.num_processing_workers = num_processing_workers
         self.processing_batch_size = processing_batch_size
         if num_processing_workers == -1:
-            self.num_processing_workers = mp.cpu_count() - 1            
+            self.num_processing_workers = mp.cpu_count() - 1
         self.rewrite = rewrite
         self.seed = seed
         self.resize_size = resize_size
@@ -85,6 +86,7 @@ class ParkingSpotsProcessor:
     def _parse_export_file(
         self
     ) -> Tuple[List[int], List[int], List[int], List[ImagePath], List[ImagePath], List[ImagePath], Dict[int, str]]:
+        """Parses export Label Studio file for the dataset."""
         labels_and_paths = get_labels_and_paths(
             downloaded_dirname=self.dl_data_dirname,
             return_url=(not self.use_local)
@@ -164,6 +166,7 @@ class ParkingSpotsProcessor:
         """Processes a split (e.g. train) of data.
 
         Args:
+            pool: A multiprocessing pool to use for parallel loading.
             image_paths: A list of paths or urls to images.
             dataset: A h5py dataset where to write data.
             resize_size: A tuple of a size of images in the resulting file. If None, will not resize.

@@ -8,6 +8,7 @@ import warnings
 
 DATASET_LABELS_FILENAME = "parking_spot_labels.json"
 
+
 def get_label_and_path_for_item(item: Any, return_url: bool) -> Tuple[Optional[str], Union[Path, str]]:
     """Extracts a label and path to image from the item.
 
