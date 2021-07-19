@@ -12,6 +12,7 @@ data_scraping
 # Training logs
 lightning_logs
 training/logs
+training/saved_models
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
