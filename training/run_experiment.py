@@ -139,11 +139,10 @@ def main() -> None:
     trainer.tune(lit_model, datamodule=data)  # pylint: disable=no-member
 
     trainer.fit(lit_model, datamodule=data)  # pylint: disable=no-member
-    trainer.test(lit_model, datamodule=data)  # pylint: disable=no-member
+    #trainer.test(lit_model, datamodule=data)  # pylint: disable=no-member
 
     if args.save_torchscript: # TODO: move to run_experiment_utils/saving?
         args.save_path.mkdir(parents=True, exist_ok=True)
-        lit_model.to_torchscript(file_path=str(args.save_path / "model.pt"))
 
         model_description = {
             "mapping": data.mapping,
@@ -158,6 +157,15 @@ def main() -> None:
         }
         preprocessing["normalize"] = normalize
         model_description["preprocessing"] = preprocessing
+
+        # import ipdb
+        # ipdb.set_trace()
+        #example_input = torch.rand()
+        example_inputs = torch.rand(model_description["input_shape"])
+        script = lit_model.cpu().eval().to_torchscript(method="trace", example_inputs=example_inputs)
+        torch.jit.save(script, str(args.save_path / "model.pt"))
+        # import ipdb
+        # ipdb.set_trace()
         # for transform in data.val_transform.transforms:
 
         # print(data.val_transform)
