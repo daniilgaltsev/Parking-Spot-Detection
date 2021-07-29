@@ -137,9 +137,8 @@ def main() -> None:
     trainer = pl.Trainer.from_argparse_args(args, callbacks=callbacks, logger=loggers, default_root_dir="training/logs")
 
     trainer.tune(lit_model, datamodule=data)  # pylint: disable=no-member
-
     trainer.fit(lit_model, datamodule=data)  # pylint: disable=no-member
-    #trainer.test(lit_model, datamodule=data)  # pylint: disable=no-member
+    trainer.test(lit_model, datamodule=data)  # pylint: disable=no-member
 
     if args.save_torchscript: # TODO: move to run_experiment_utils/saving?
         args.save_path.mkdir(parents=True, exist_ok=True)
