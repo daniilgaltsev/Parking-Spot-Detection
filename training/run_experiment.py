@@ -95,6 +95,32 @@ def _set_seeds(seed: int) -> None:
     random.seed(seed)
 
 
+def _save_model(args: argparse.Namespace, lit_model: pl.LightningModule, data: pl.LightningDataModule):
+    """Saves the model and the description file."""
+    if args.save_torchscript:
+        args.save_path.mkdir(parents=True, exist_ok=True)
+
+        model_description = {
+            "mapping": data.mapping,
+            "input_shape": data.dims,
+            "output_shape": data.output_dims,
+        }
+        preprocessing = {}
+        normalize = {
+            "step": 0,
+            "mean": data.val_transform.transforms[1].mean,
+            "std": data.val_transform.transforms[1].std
+        }
+        preprocessing["normalize"] = normalize
+        model_description["preprocessing"] = preprocessing
+
+        example_inputs = torch.rand(model_description["input_shape"])
+        script = lit_model.cpu().eval().to_torchscript(method="trace", example_inputs=example_inputs)
+        torch.jit.save(script, str(args.save_path / "model.pt"))
+        with open(args.save_path / "model_desc.json", "w+") as f:
+            json.dump(model_description, f)
+
+
 def main() -> None:
     """Runs an experiment with specified args."""
     parser = _setup_parser()
@@ -140,39 +166,7 @@ def main() -> None:
     trainer.fit(lit_model, datamodule=data)  # pylint: disable=no-member
     trainer.test(lit_model, datamodule=data)  # pylint: disable=no-member
 
-    if args.save_torchscript: # TODO: move to run_experiment_utils/saving?
-        args.save_path.mkdir(parents=True, exist_ok=True)
-
-        model_description = {
-            "mapping": data.mapping,
-            "input_shape": data.dims,
-            "output_shape": data.output_dims,
-        }
-        preprocessing = {}
-        normalize = {
-            "step": 0,
-            "mean": data.val_transform.transforms[1].mean,
-            "std": data.val_transform.transforms[1].std
-        }
-        preprocessing["normalize"] = normalize
-        model_description["preprocessing"] = preprocessing
-
-        # import ipdb
-        # ipdb.set_trace()
-        #example_input = torch.rand()
-        example_inputs = torch.rand(model_description["input_shape"])
-        script = lit_model.cpu().eval().to_torchscript(method="trace", example_inputs=example_inputs)
-        torch.jit.save(script, str(args.save_path / "model.pt"))
-        # import ipdb
-        # ipdb.set_trace()
-        # for transform in data.val_transform.transforms:
-
-        # print(data.val_transform)
-        # import ipdb
-        # ipdb.set_trace()
-        with open(args.save_path / "model_desc.json", "w+") as f:
-            json.dump(model_description, f)
-
+    _save_model(args, lit_model, data)
 
 
 if __name__ == "__main__":

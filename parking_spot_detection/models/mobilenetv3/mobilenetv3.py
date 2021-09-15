@@ -13,7 +13,7 @@ USE_TORCHVISION_MODEL = True
 
 
 class MobileNetV3(nn.Module):
-    """Implementation of MobileNet-v3
+    """Implementation of MobileNet-v3.
 
     Args:
         data_config: a dictionary containing information about the data.

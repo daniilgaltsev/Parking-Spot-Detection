@@ -4,7 +4,6 @@ import argparse
 import json
 from typing import Optional, Tuple
 
-import h5py
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
@@ -28,7 +27,7 @@ PROCESSING_BATCH_SIZE = 1000
 TRAINVAL_SPLIT = 0.9
 TRAIN_SPLIT = 0.95
 
-# Calculated using ..utils.calculate_mean_and_std with 4320 train images, seed=0.
+# Calculated using ..utils.calculate_mean_and_std with 4320 train images, image_size=640x640, seed=0.
 DATASET_MEAN = [0.4690, 0.4777, 0.4608]
 DATASET_STD = [0.2022, 0.1973, 0.2252]
 
@@ -90,8 +89,10 @@ class ParkingSpots(BaseDataModule):
         ]
         if self.color_jitter:
             train_transform_list.append(transforms.ColorJitter(self.color_jitter, self.color_jitter, self.color_jitter))
-        # transforms.RandomResizedCrop(size?, scale=(0.9, 1.0))
-        #TODO: add or remove RandomResizedCrop
+        train_transform_list.append(transforms.RandomResizedCrop(
+            size=[self.dims[2], self.dims[3]],
+            scale=(0.8, 1.1)
+        ))
         train_transform_list.append(transforms.RandomAffine(
             degrees=self.degrees_affine,
             translate=(self.translate_affine, self.translate_affine),
@@ -257,18 +258,3 @@ def _process_dataset(
 
 if __name__ == "__main__":
     _process_dataset(use_local=True, num_processing_workers=9, rewrite=True, seed=0, resize_size=None)
-
-    import matplotlib.pyplot as plt
-    def showid(idx, imgs, labels):
-        print(labels[idx])
-        plt.imshow(imgs[idx])
-        plt.show()
-    with h5py.File(PROCESSED_DATA_FILENAME, "r") as fi:
-        x_train = fi['x_train']
-        x_val = fi['x_val']
-        x_test = fi['x_test']
-        y_train = fi['y_train']
-        showi = lambda idx: showid(idx, x_train, y_train)
-        import ipdb
-        ipdb.set_trace()
-        print(1)
