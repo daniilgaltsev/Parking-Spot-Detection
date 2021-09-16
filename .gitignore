@@ -14,6 +14,10 @@ lightning_logs
 training/logs
 training/saved_models
 
+# Server
+api/model_desc.json
+api/model.pt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

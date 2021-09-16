@@ -1,18 +1,27 @@
 -c requirements.txt
 
-bandit
 black
+h5py
 ipdb
 itermplot
 matplotlib
-mypy
 pandas
 pillow
+pytorch-lightning<1.2
+pyyaml
+requests
+scipy
+sklearn
+toml
+torchvision==0.9.1
+tqdm
+wandb
+
+bandit
+mypy
 pycodestyle
 pydocstyle
 pylint
 pytest
 safety
-scipy
 shellcheck-py
-wandb

@@ -82,7 +82,7 @@ class CIFAR10(BaseDataModule):
         if stage == 'fit' or stage is None:
             with h5py.File(PROCESSED_DATA_FILENAME, "r") as f:
                 x_trainval = f['x_train'][:]
-                y_trainval = f['y_train'][:].astype(np.int64)
+                y_trainval = f['y_train'][:].astype(np.int64)  # pylint: disable=no-member
 
             self.x_train, self.x_val, self.y_train, self.y_val = train_test_split(
                 x_trainval, y_trainval,
@@ -94,7 +94,7 @@ class CIFAR10(BaseDataModule):
         if stage == 'test' or stage is None:
             with h5py.File(PROCESSED_DATA_FILENAME, "r") as f:
                 self.x_test = f['x_test'][:]
-                self.y_test = f['y_test'][:].astype(np.int64)
+                self.y_test = f['y_test'][:].astype(np.int64)  # pylint: disable=no-member
             self.data_test = BaseDataset(self.x_test, self.y_test, transform=self.transform_val)
 
     @staticmethod
@@ -121,7 +121,7 @@ def _download_and_process_cifar10() -> None:
     _process_raw_dataset(metadata["filename"], DL_DATA_DIRNAME)
 
 
-def _process_raw_dataset(filename: str, dirname: Path) -> None:
+def _process_raw_dataset(filename: str, dirname: Path) -> None:  # pylint: disable=too-many-locals
     """Processes raw dataset at dirname/filename and saves .h5 files in processed."""
     path = dirname / filename
 
@@ -138,13 +138,13 @@ def _process_raw_dataset(filename: str, dirname: Path) -> None:
     x_train, y_train = [], []
     x_test, y_test = None, None
     mapping = {}
-    for key in contents:
+    for key, item in contents.items():
         if key == 'batches.meta':
-            for i, class_name in enumerate(contents[key][b'label_names']):
+            for i, class_name in enumerate(item[b'label_names']):
                 mapping[i] = class_name.decode()
         else:
-            labels = np.array(contents[key][b'labels'])
-            data = contents[key][b'data'].reshape(-1, 3, 32, 32)
+            labels = np.array(item[b'labels'])
+            data = item[b'data'].reshape(-1, 3, 32, 32)
             data = np.transpose(data, (0, 2, 3, 1))
 
             if key.find('data_') == -1:

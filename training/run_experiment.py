@@ -116,7 +116,7 @@ def _save_model(args: argparse.Namespace, lit_model: pl.LightningModule, data: p
 
         example_inputs = torch.rand(model_description["input_shape"])
         script = lit_model.cpu().eval().to_torchscript(method="trace", example_inputs=example_inputs)
-        torch.jit.save(script, str(args.save_path / "model.pt"))
+        torch.jit.save(script.model, str(args.save_path / "model.pt"))
         with open(args.save_path / "model_desc.json", "w+") as f:
             json.dump(model_description, f)
 

@@ -100,7 +100,7 @@ class ParkingSpotsProcessor:
                 name_to_class[label] = len(name_to_class)
             y.append(name_to_class[label])
             paths.append(self.images_dirname / path if self.use_local else path)
-        mapping = {name_to_class[name]: name for name in name_to_class}
+        mapping = {cls: name for name, cls in name_to_class.items()}
 
         y_trainval, y_test, paths_trainval, paths_test = train_test_split(
             y, paths,

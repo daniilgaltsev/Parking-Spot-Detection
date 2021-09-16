@@ -1,12 +1,6 @@
-flask
-h5py
+fastapi
+uvicorn
 numpy
+torch==1.8.1
 opencv-python-headless
-pytorch-lightning<1.2
-pyyaml
-requests
-sklearn
-toml
-torch
-torchvision
-tqdm
+python-multipart
