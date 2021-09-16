@@ -296,7 +296,7 @@ toml==0.10.2
     #   pytest
 tomli==1.2.1
     # via black
-torch==1.8.1+cu111
+torch==1.8.1
     # via
     #   -c requirements.txt
     #   pytorch-lightning
