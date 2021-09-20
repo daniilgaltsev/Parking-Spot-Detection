@@ -1,10 +1,10 @@
 # Parking-Spot-Detection
 
-This repository contains the code that was used to train a parking spot detection model. While the dataset is not available, you can download the trained models and test them with the server. There is also a demo mobile app ([source](`https://gitlab.com/avshon1/mlparking`)).
+This repository contains the code that was used to train a parking spot detection model. While the dataset is not available, you can download the trained models and test them with the server. There is also a demo mobile app ([source](https://gitlab.com/avshon1/mlparking)).
 
 # Download Models
 
-The models can be downloaded from [Google Drive](`https://drive.google.com/file/d/1wUYoObciki2CjEBCQ5eKP95q40X78fKZ/view?usp=sharing`). The zip file contains two folders for ResNet-18 and MobileNetV3. Each folder contains a saved torchscript model and a model description file.
+The models can be downloaded from [Google Drive](https://drive.google.com/file/d/1wUYoObciki2CjEBCQ5eKP95q40X78fKZ/view?usp=sharing). The zip file contains two folders for ResNet-18 and MobileNetV3. Each folder contains a saved torchscript model and a model description file.
 
 # Test Models
 
